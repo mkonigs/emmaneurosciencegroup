@@ -73,8 +73,21 @@ We will now start to source other Rmd scripts. This allows you to keep a better 
 - Please open the relevant script to find further information about the procedures performed.
 - Find the results in the 'results' folder 
 
+```{r prepare, echo=FALSE, include=FALSE}
 
-```{r create_database, echo=FALSE, include=FALSE}
+# make the necessary folders
+dir.create("analyses")
+dir.create("data")
+dir.create("databases")
+dir.create("figures")
+dir.create("results")
+
+
+```
+
+
+
+```{r proproc, echo=FALSE, include=FALSE}
 
 ### Merge ###
 rmarkdown::render("scripts/Merge.Rmd", output_file = "../results/1. Merge.html")
