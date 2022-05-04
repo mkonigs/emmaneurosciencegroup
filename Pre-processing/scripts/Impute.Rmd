@@ -1,0 +1,65 @@
+---
+title: "Impute"
+output: html_document
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Impute missing values
+
+This script will:
+
+- Impute missing values
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# usage
+packages <- c("factoextra", "dplyr", "psych", "kableExtra", "reshape2", "ggplot2", "compareGroups", "ggpubr", "mice")
+ipak(packages)
+
+
+```
+
+
+
+```{r impute, echo=FALSE, warning=FALSE, include = false}
+
+# predictor matrix
+preds <- matrix(NA, nrow=ncol(data), ncol=ncol(data))
+
+for (i in 1:ncol(preds)){
+  
+  for (j in 1:nrow(preds))
+    
+    if (i != j){
+      preds[j,i] <- as.numeric(colnames(data)[i]!=omit)
+    } else{
+      preds[j,i] <- 0
+    }
+    
+}
+  
+# perform imputation
+tempData <- mice(data,m=5,maxit=50,meth='cart', predictorMatrix = preds, seed=500)
+
+# get summary
+summary(tempData)
+
+# aggregate to one dataset
+data_imp <- complete(tempData,1:5)
+data_imp_agg <- aggregate(x = data_imp, by = list(data_imp$subj), FUN = "mean")
+
+data_imp_agg <- select(data_imp_agg, -c("Group.1"))
+
+write.csv2(data_imp_agg,file="../databases/data_imputed.csv", row.names = FALSE)
+
+
+```
+
+
+

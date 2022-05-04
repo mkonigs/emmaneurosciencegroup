@@ -1,0 +1,47 @@
+---
+title: "Merge"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Merge
+
+This script will:
+
+- load two databases (Background variables and Emma Toolbox)
+
+- merge based on one identifier
+
+- save the data into a new file
+
+- provide a sneak peak into the data
+
+
+
+
+```{r merge, echo=FALSE, include=TRUE}
+
+# load files
+bg <- read.csv2(file="../data/background.csv", stringsAsFactors = FALSE, sep=";")
+et <- read.csv2(file="../data/et_domain_scores.csv", stringsAsFactors = FALSE, sep=";")
+
+# merge files using subj as identifier
+# the 'use all' function will produce a dataset that includes all subjects in 'bg' and 'et' datasets
+data <- merge(bg, et, by="subj", all = TRUE)
+
+# save merged file 
+write.csv2(data, "../databases/data_merged.csv", row.names = FALSE)
+
+# sneak peak into the data
+print(head(data))
+
+
+```

@@ -1,0 +1,91 @@
+---
+title: "Normality"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Explore the distribution of your variables
+
+This script will:
+
+- plot Q-Q plots for all variables in DV_inspect
+
+- provide results for several normality indicators (Skewness, Kurtosis)
+
+- provide results for several normality tests (Kolmogorov-Smirnov, Shapiro-Wilk, Anderson-Darling)
+
+- return a summary of the findings
+
+
+
+```{r load, echo=FALSE, include=TRUE}
+
+
+ipak(c("car", "nortest"))
+
+
+```
+
+
+```{r inspect_normality, echo=FALSE, include=TRUE}
+
+normality <- function(data, DV){
+  
+  # select only the dependent variables
+  data_dv <- select(data, c(DV)) 
+  
+  
+  norm_sum <- data.frame(matrix(NA, nrow=ncol(data_dv), ncol=6))
+  colnames(norm_sum) <- c("variable", "skweness", "kurtosis", "Kolmogorov-Smirnov", "Shapiro-Wilk", "Anderson-Darling")
+  
+  
+  
+    # loop through DVs 
+    for (i in 1:ncol(data_dv)){
+    
+      plot <- qqPlot(data_dv[,i], main=colnames(data_dv)[i])
+      print(plot)
+      
+      # print variable
+      norm_sum[i,1] <- colnames(data_dv)[i]
+      
+      # print skewness
+      norm_sum[i,2] <- Skew(data_dv[,i], na.rm = TRUE)
+      
+      # print kurtosis
+      norm_sum[i,3] <- Kurt(data_dv[,i], na.rm = TRUE)
+      
+      # print Kolmogorov-Smirnov
+      norm_sum[i,4] <- round(ks.test(data_dv[,i], "pnorm", mean=mean(data_dv[,i], na.rm = TRUE), sd=sd(data_dv[,i], na.rm = TRUE))$p.value, 4)
+      
+      # print Shapiro-Wilk
+      norm_sum[i,5] <- round(shapiro.test(data_dv[,i])$p.value,4)
+ 
+      # print Anderson-Darling
+      norm_sum[i,6] <- round(ad.test(data_dv[,i])$p.value,4)       
+
+    }
+  
+  write.csv2(norm_sum, "../databases/normality_summary.csv", row.names = FALSE)
+
+  return(norm_sum)
+  }
+
+
+
+
+
+# Perform the normality checker
+normality(data_win, DV_inspect)
+
+
+```
+
+

@@ -1,0 +1,92 @@
+---
+title: "Principal Component Analysis"
+output: html_document
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Run principal component analysis
+
+This script will:
+
+- Deploy principal component analysis
+
+- Provide insight in factor loadings
+
+- Determine the set of variables with the greatest contribution to each factor
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# usage
+packages <- c("factoextra", "dplyr", "psych", "kableExtra", "reshape2", "ggplot2", "compareGroups", "ggpubr", "mice", "caret")
+ipak(packages)
+
+
+```
+
+
+```{r pca, echo=FALSE, warning=FALSE}
+data_pca <- select(data, -c(omit))
+
+princ <- principal(data_pca, residual=F, rotate="varimax", nfactors = f)
+
+print(princ)
+
+loadings <- sqrt(princ$loadings*princ$loadings)
+
+drops <- data.frame(matrix(NA, nrow = f, ncol = 2))
+colnames(drops) <- c("component", "drop")
+
+for (i in 1:princ$factors){
+  
+  #sorteer de variabelen per factor op lading van groot naar klein
+  loadings <- as.matrix.data.frame(loadings)
+  row.names(loadings) <- row.names(princ$loadings)
+  
+  #bepaal de drop in lading tussen elk paar opeenvolgende variabelen
+  loadings_i <- sort(loadings[,i], decreasing = TRUE)
+  loadings_i_diff <- vector(mode = "numeric", length = length(loadings_i))
+  names(loadings_i_diff) <- names(loadings_i)
+  
+  for (j in 2:(length(loadings_i)-1)){
+    
+    loadings_i_diff[j] <- loadings_i[j]-loadings_i[j+1]
+
+  }
+
+  # bepaal waar de grootste drop in lasing plaatsvindt (m.u.v. variabele 1 en 2)
+drop_largest <- names(sort(loadings_i_diff, decreasing = TRUE)[1])
+drop_pos <- match(drop_largest, names(loadings_i_diff))
+
+# houd rekening met het +/- teken
+signs <- sign(princ$loadings[,i])
+
+#order de tekens op basis van de orderning van lading per factor, en pas het teken toe
+loadings_i <- loadings_i * signs[match(names(loadings_i), names(signs))]
+
+# plot het resultaat, met daarin de selectie van meest kenmerkende variabelen weergegeven
+plot(loadings_i, main=paste(i, "th component", sep=""))
+abline(v=drop_pos+0.5, col = "blue")
+text(loadings_i, labels=names(loadings_i), cex= 0.5, pos=4)
+
+drops[i,1] <- i
+drops[i,2] <- drop_pos
+
+}
+
+#schrijf de domeinscores weg
+write.csv(princ$scores, file="../databases/data_pca.csv", row.names = FALSE)
+
+#schrijf model weg
+saveRDS(princ, "../databases/PCA.rds")
+
+#schrijf dropscores weg
+write.csv(drops, file="../databases/drops.csv", row.names = FALSE)
+
+```
+

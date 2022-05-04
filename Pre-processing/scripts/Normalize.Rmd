@@ -1,0 +1,54 @@
+---
+title: "Normalize"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Normalize your selected variables
+
+This script will:
+
+- Normalize your selected variables
+
+- Re-inspect the distribition of your variables
+
+
+
+```{r normalize, echo=TRUE, include=TRUE}
+
+
+ipak("bestNormalize")
+
+
+
+data_win_norm <- data_win
+
+for (j in DV_norm){
+  
+  data_win_norm[,which(colnames(data_win_norm)==j)] <- orderNorm(data_win[,which(colnames(data_win)==j)])$x.t
+
+}
+
+
+
+
+```
+
+```{r re-inspect, echo = TRUE, include=TRUE}
+
+normality(data_win_norm, DV_inspect)
+
+
+```
+
+
+```
+
+

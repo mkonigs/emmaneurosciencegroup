@@ -1,0 +1,87 @@
+---
+title: "Apply Principal Component Analysis"
+output: html_document
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Apply the PCA model to new data
+
+This script will:
+
+- Customly calculate of factor scores based on factors loadings with the greatest contribution while also retaining the original direction of the variable 
+
+- Display the distributions of the newly created component scores
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+ipak <- function(pkg){
+    new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+    if (length(new.pkg)) 
+        install.packages(new.pkg, dependencies = TRUE)
+    sapply(pkg, require, character.only = TRUE)
+}
+
+# usage
+packages <- c("factoextra", "dplyr", "psych", "kableExtra", "reshape2", "ggplot2", "compareGroups", "ggpubr", "mice", "stringr")
+ipak(packages)
+
+
+```
+
+
+
+```{r apply to new data, echo=FALSE, include=TRUE}
+
+# get data
+data_pca <- select(data, -c(omit))
+vars_omit <- select(data, c(omit))
+
+#import model
+princ <- readRDS("../databases/PCA.rds")
+
+# predict the pca scores based on the pca model
+princ_2 <- predict(princ, data_pca)
+princ_2 <- as.data.frame(princ_2)
+
+# transformeer naar z-scores en maak er een dataframe van
+data_pca <- as.data.frame(scale(data_pca, center = T, scale = T))
+
+# get the drops
+drops <- read.csv(file="../databases/drops.csv")
+
+data_pca_comp_corr <- data.frame(matrix( NA, nrow=nrow(data_pca), ncol=f))
+colnames(data_pca_comp_corr) <- paste0("comp_", c(1:f))
+
+# create component scores with neutral factor loadings
+for (i in 1:f){
+  
+  loadings <- sort(princ$loadings[,i], decreasing=TRUE)[1:drops[i,2]]
+  loadings <- sqrt(loadings *loadings)
+  loadings <- loadings/sum(sqrt(loadings*loadings))
+
+  vars_comp <- select(data_pca, names(loadings))
+  vars_comp_loadings <- vars_comp * loadings
+  data_pca_comp_corr[,i] <- rowSums((vars_comp_loadings)) / length(loadings)
+  colnames(data_pca_comp_corr)[i] <- toString(paste0(names(loadings), sep="  "))
+}
+
+bu <- colnames(data_pca_comp_corr)
+colnames(data_pca_comp_corr) <- c(1:f)
+
+DV <- colnames(data_pca_comp_corr)
+outliers(data_pca_comp_corr, DV, tresh)
+
+
+colnames(data_pca_comp_corr) <- bu
+
+#write to file
+data_pca_comp_corr <- data.frame(vars_omit, data_pca_comp_corr)
+write.csv2(data_pca_comp_corr, "../databases/data_pca_scores_corr.csv", row.names = FALSE)
+
+
+```

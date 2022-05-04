@@ -1,0 +1,125 @@
+---
+title: "Outliers"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+
+## Identify the outliers
+
+This script will:
+
+- detect outliers using the predefined criterion
+
+- provide a plot of the outliers per variable
+
+- provide a file with the number of outliers and the corresponding subject numbers
+
+
+
+```{r check, echo=FALSE, include=TRUE}
+
+
+ipak(c("ggplot2", "reshape2"))
+
+outliers <- function(data, DV, tresh, scale=TRUE){
+  
+  # select only the dependent variables
+  data_dv <- select(data, c(DV)) 
+  
+  # transform to z-scores
+  if (scale==TRUE){
+    print("performing scaling")
+  data_dv_z <- data.frame(scale(data_dv, center=TRUE, scale=TRUE))
+  }else if (scale ==FALSE){
+    print("omitting scaling")
+  }
+  
+  data_dv_z <- data.frame(scale(data_dv, center=TRUE, scale=TRUE))
+  
+  # copy dataframe to binarize with outlier information (0/1)
+  data_dv_z_bin <- data_dv_z
+  
+  # define outliers using treshold
+  data_dv_z_bin[data_dv_z>tresh | data_dv_z<(tresh*-1)] <- 1
+  
+  # define non-outliers using treshold
+  data_dv_z_bin[data_dv_z <= tresh & data_dv_z >= (tresh*-1)] <- 0
+
+  # create long formats for plotting
+  data_dv_z_long <- melt(data_dv_z)
+  data_dv_z_bin_long <- melt(data_dv_z_bin)
+  
+  # add outlier information to the z-scores
+  data_dv_z_long <- data.frame(data_dv_z_long, data_dv_z_bin_long$value) 
+  
+  # rename the columns
+  colnames(data_dv_z_long) <- c("variable", "value", "outlier")
+  
+  # make the outlier information a a factor variable fot better color coding while plotting
+  data_dv_z_long$outlier <- as.factor(data_dv_z_long$outlier)
+  
+  # make the figure
+  plot <- ggplot(data_dv_z_long, aes(variable, value)) + geom_jitter(aes(colour = outlier)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle(paste0("Outlier detection at z = ", tresh))
+  
+  # print the plot
+  print(plot)
+  
+  # save the plot as figure
+  cairo_pdf("../figures/outliers.pdf")
+    print(plot)
+  dev.off()
+  
+  # make outlier summary table
+  outl_sum <- data.frame(matrix(NA, nrow=ncol(data_dv), ncol=4))
+  colnames(outl_sum) <- c("variable", "outliers_abs", "outliers_perc", "outliers")
+
+    # loop through DVs 
+    for (i in 1:ncol(data_dv)){
+    
+      # print variable
+      outl_sum[i,1] <- colnames(data_dv)[i]
+      
+      # print number of outliers for this variable
+      outl_sum[i,2] <- sum(data_dv_z_bin[,i], na.rm = TRUE)
+      
+      # print percentage of outliers for this variable
+      outl_sum[i,3] <- round(outl_sum[i,2] / length(data_dv_z_bin[,i]) * 100,2)
+      
+      # print subjects with outliers
+      outl_sum[i,4] <- paste((na.omit(data$subj[data_dv_z_bin[,i]>0])), collapse=" ")
+    
+    }
+  
+  write.csv2(outl_sum, "../databases/outlier_summary.csv", row.names = FALSE)
+
+  vars_with_outliers_perc <- round((sum(outl_sum$outliers_abs>0) / length(outl_sum$outliers_abs)* 100),1)
+ 
+  paste0("Among the dependent variables, ", vars_with_outliers_perc, "% had outliers (M±", tresh, "SD), where the mean percentage of outliers in the variables was ", round(mean(outl_sum$outliers_perc),2), "%.")
+
+  return(outl_sum)
+  }
+
+
+# load files
+data <- read.csv2(file="../databases/data_merged.csv", stringsAsFactors = FALSE, sep=";")
+
+# define the treshold for outlier detection
+tresh <- round(qnorm(1-p), 2)
+
+# execute outlier detection
+print(outliers(data, DV_inspect, tresh))
+
+# rename files
+file.rename("../figures/outliers.pdf", "../databases/outliers_pre_win.pdf")
+file.rename("../databases/outlier_summary.csv", "../databases/outlier_summary_pre_win.csv")
+
+```
+

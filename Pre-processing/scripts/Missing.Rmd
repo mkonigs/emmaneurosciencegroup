@@ -1,0 +1,78 @@
+---
+title: "Missing data"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Explore missing data
+
+This script will:
+
+- Identify missing values
+
+- Provide summary statistics regarding missing values
+
+
+
+
+```{r check, echo=TRUE, include=TRUE}
+
+ipak(c("car", "nortest"))
+
+missing <- function(data, DV){
+  
+  #replace infinite with NA
+  data[mapply(is.infinite, data)] <- NA
+
+  # replace NaN with NA
+  data[mapply(is.nan, data)] <- NA
+
+  # select only the dependent variables
+  data_dv <- select(data, c(DV)) 
+  
+  
+  miss_sum <- data.frame(matrix(NA, nrow=ncol(data_dv), ncol=3))
+  colnames(miss_sum) <- c("variable", "missing_abs", "missing_perc")
+  
+  
+  
+    # loop through DVs 
+    for (i in 1:ncol(data_dv)){
+  
+      
+      # print variable
+      miss_sum[i,1] <- colnames(data_dv)[i]
+      
+      # print absolute missings
+      miss_sum[i,2] <- sum(is.na(data_dv[,i])) 
+      
+      # print relative missing
+      miss_sum[i,3] <- round((miss_sum[i,2] / length(data_dv[,i]))*100,1)
+      
+    }
+  
+  write.csv2(miss_sum, "../databases/missing_summary.csv", row.names = FALSE)
+
+  return(miss_sum)
+  }
+
+
+# Perform the normality checker
+missing(data, DV_inspect)
+
+
+```
+
+
+
+
+
+
+

@@ -1,0 +1,78 @@
+---
+title: "Winsorize"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+## Rescale outliers using Winsorizing
+
+This script will:
+
+- recale outliers in the selected variables using Winsorizing
+
+- provide a plot of the outliers per variable after Winsorizing
+
+- provide a file with the number of outliers and the corresponding subject numbers after Winsorizing
+
+
+
+```{r winsorize, echo=FALSE, include=TRUE}
+
+# load the packages
+ipak("DescTools")
+
+data_win <- data
+
+#loop through DVs
+for (j in DV_correct){
+
+  # print var
+  print(paste0("correcting variable: ", j))
+  
+  # perform winsorizing
+  data_win[,which(colnames(data_win)==j)] <- Winsorize(data_win[,colnames(data_win)==j], probs = c(p, 1-p), na.rm = TRUE)
+  
+}
+
+  write.csv2(data_win, "../databases/data_win.csv", row.names = FALSE)
+
+
+```
+
+
+# Re-inspect the data
+
+```{r re-inspect, echo=FALSE, include=TRUE}
+
+# re-inspect
+print("Outlier overview for correctef variables, after Winsorizing")
+print(outliers(data_win, DV_correct, tresh, scale=FALSE))
+
+print("Outlier overview before Winsorizing")
+print(outliers(data, DV_inspect, tresh, scale=FALSE))
+
+print("Outlier overview after Winsorizing")
+print(outliers(data_win, DV_inspect, tresh, scale=FALSE))
+
+# rename files
+file.rename("../figures/outliers.pdf", "../databases/outliers_post_win.pdf")
+file.rename("../databases/outlier_summary.csv", "../databases/outlier_summary_post_win.csv")
+
+```
+
+
+
+
+
+
+
+
+
+

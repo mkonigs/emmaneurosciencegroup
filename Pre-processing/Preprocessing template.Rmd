@@ -1,0 +1,156 @@
+---
+title: "Preprocessing Templae"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+## Information
+
+This is the pre-processing template for the Emma Neuroscience Group. This template provides examples on how you can organize pre-processing in your project using R with RStudio.
+
+RStudio is a wrapper around R, providing you with a visualized program (GUI: graphical user interface) that you can use to work easier with R. 
+
+One feature of RStudio is the use of RMarkdown (.Rmd files). 
+
+RMarkdown allows you to combine into one document:
+- background information that will not be interpreted as part of the script (this text)
+- the script text itself (code)
+- the results produced by the code (e.g. figures)
+
+The above can be integrated into one output document (html or pdf). 
+
+This is an RMarkdown document, you are currently reading the background text that is not intepreted as code by R. You can run
+- the script completely (Run > Run all) 
+- parts of the script in isolation, organized in chunks starting with (play button)
+- single lines using CTRL + ENTER
+
+
+```{r setting, include=FALSE}
+
+# setting for RMarkdown
+knitr::opts_chunk$set(echo = TRUE)
+
+
+# this line is necessary for working in the Azure environment
+options(download.file.method="libcurl", repos=c("CRAN"="https://cran.r-project.org/"))
+
+```
+
+## Loading packages
+
+At the beginning of each script, you will be loading the packages that you need. Packages are a set of scripts (functions) that is contributed open source by a fellow-user. Loading a package means that you add it to your session so that you can access the functions in the package.
+
+We will load the packages using a function that we will call ipak. A function is a part of script that you can re-use throughout the remainder of the script once you have defined it. You could say it works as a hyperlink to a part of script that you may want to use repeatedly. It is worthwile to define functions yourself for operations that you want to repeat within a manuscript: if you want to change something in the function, you will only have to do it once.
+
+Now let's define the function and load a package (dplyr and ggplot). If the package is not installed, then the function will first install the package and then load it.
+
+```{r packages, include=FALSE}
+
+# ipak function: install and load multiple R packages.
+ipak <- function(pkg){
+    new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+    if (length(new.pkg)) 
+        install.packages(new.pkg, dependencies = TRUE)
+    sapply(pkg, require, character.only = TRUE)
+}
+
+
+# make a vector of strings with the packages that you want to load
+packages <- c("dplyr", "ggplot2")
+
+# feed the vector to the function ipak and the packages will be installed and loaded
+ipak(packages)
+
+```
+
+
+## Source scripts
+
+We will now start to source other Rmd scripts. This allows you to keep a better overview of your operations. 
+- Please open the relevant script to find further information about the procedures performed.
+- Find the results in the 'results' folder 
+
+
+```{r create_database, echo=FALSE, include=FALSE}
+
+### Merge ###
+rmarkdown::render("scripts/Merge.Rmd", output_file = "../results/1. Merge.html")
+#############
+
+
+
+### Explore ###
+rmarkdown::render("scripts/Explore.Rmd", output_file = "../results/2. Explore.html")
+###############
+
+
+
+### Outliers ###
+# Define p-value for outliers
+p <- .025  
+
+# define the variables that you want to inspect
+DV_inspect <- colnames(select(data, -c("subj", "age", "sex_male", "edu")))  
+
+# Inspect
+rmarkdown::render("scripts/Outliers.Rmd", output_file = "../results/3. Outliers.html")
+
+# define the variables that you want to correct
+DV_correct <- c("mrt_neutral", "exec_acc")  
+
+# Correct outliers
+rmarkdown::render("scripts/Winsorize.Rmd", output_file = "../results/3. Winsorize.html")
+################
+
+
+
+### Normality ###
+data <- data_win  # Select input file
+rmarkdown::render("scripts/Normality.Rmd", output_file = "../results/4. Normality.html")
+#################
+
+
+
+### Normalize ###
+DV_norm <- c("d_proc", "mrt_neutral", "sd_neutral", "exec_acc")  # set the variables for normalization
+rmarkdown::render("scripts/Normalize.Rmd", output_file = "../results/5. Normalize.html")
+#################
+
+
+
+### Missing values  ###
+data <- data_norm # select input file
+rmarkdown::render("scripts/Missing.Rmd", output_file = "../results/6. Missing.html")
+# add missing per patient
+#######################
+
+
+### Impute  ###
+data <- data_norm # select input file
+omit <- c("subj") # select the variables to omit
+
+rmarkdown::render("scripts/Impute.Rmd", output_file = "../results/7. Impute.html")
+################
+
+
+
+### PCA ###
+f <- 9  # number of factors to extract
+data <- data_imp_agg # select input file for the pca model
+omit <- c("subj", "d_proc", "d_vis_mem", "d_ver_mem", "d_vis_wm", "d_ver_wm", "d_visuom", "age", "sex_male", "edu", "ver_mem_ret", "vis_mem_ret", "SCAT_tot")
+rmarkdown::render("scripts/PCA.Rmd", output_file = "../results/8. PCA.html")
+############
+
+
+
+### Apply PCA ###
+data <- data_imp_agg # select input file
+rmarkdown::render("scripts/Apply_PCA.Rmd", output_file = "../results/9. Apply PCA.html")
+##################
+
+
+
+```

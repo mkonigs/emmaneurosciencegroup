@@ -1,0 +1,32 @@
+---
+title: "Explore"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+![Emma Neuroscience Group - Preprocessing Pipeline](Logo.png)
+
+
+
+## Explore your data
+
+This script will:
+
+- explore the data by providing summary statistics
+
+
+
+
+```{r merge, echo=FALSE, echo=FALSE, include=TRUE}
+
+# load files
+data <- read.csv2(file="../databases/data_merged.csv", stringsAsFactors = FALSE, sep=";")
+
+# print summary of each variable
+print(summary(data))
+
+```
